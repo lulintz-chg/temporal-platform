@@ -6,7 +6,9 @@ describe('greetingWorkflow', () => {
   let testEnv: TestWorkflowEnvironment;
 
   beforeAll(async () => {
-    testEnv = await TestWorkflowEnvironment.createTimeSkipping();
+    // greetingWorkflow has no timers, so a full local server (no time-skipping)
+    // is preferred per Temporal SDK testing guidance.
+    testEnv = await TestWorkflowEnvironment.createLocal();
   });
 
   afterAll(async () => {

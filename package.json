@@ -5,21 +5,23 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "build:workflow-bundle": "ts-node scripts/build-workflow-bundle.ts",
     "lint": "eslint . --ext .ts",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "worker": "ts-node src/worker/worker.ts",
+    "worker:prod": "node dist/worker/worker.js",
     "start:greeting": "ts-node src/client/start-greeting.ts"
   },
   "dependencies": {
-    "@temporalio/activity": "^1.11.0",
-    "@temporalio/client": "^1.11.0",
-    "@temporalio/worker": "^1.11.0",
-    "@temporalio/workflow": "^1.11.0"
+    "@temporalio/activity": "~1.11.0",
+    "@temporalio/client": "~1.11.0",
+    "@temporalio/worker": "~1.11.0",
+    "@temporalio/workflow": "~1.11.0"
   },
   "devDependencies": {
-    "@temporalio/testing": "^1.11.0",
+    "@temporalio/testing": "~1.11.0",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.14.0",
     "@typescript-eslint/eslint-plugin": "^7.13.0",

@@ -51,6 +51,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run build:workflow-bundle
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worker-dist
+          path: dist/
+          retention-days: 1
 
   compose-validate:
     runs-on: ubuntu-latest
@@ -68,6 +74,10 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: worker-dist
+          path: dist/
 
       - name: Start Temporal stack
         run: docker compose --project-directory . -f docker/docker-compose.yml up -d
@@ -75,13 +85,13 @@ jobs:
       - name: Wait for Temporal to be healthy
         run: ./scripts/wait-for-temporal.sh temporal:7233
 
-      - name: Start workers (dev + prod namespaces)
+      - name: Start workers (dev + prod namespaces, production worker mode)
         run: |
           set -a; . docker/namespaces/dev.env; set +a
-          npm run worker & echo $! > worker-dev.pid
+          TEMPORAL_WORKER_MODE=production npm run worker:prod & echo $! > worker-dev.pid
 
           set -a; . docker/namespaces/prod.env; set +a
-          npm run worker & echo $! > worker-prod.pid
+          TEMPORAL_WORKER_MODE=production npm run worker:prod & echo $! > worker-prod.pid
 
           sleep 5
 

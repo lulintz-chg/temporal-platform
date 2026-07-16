@@ -18,11 +18,23 @@ Wait for the stack to become healthy (`docker compose --project-directory . -f d
 
 ```
 set -a; . docker/namespaces/dev.env; set +a
-npm run worker            # in one terminal
+npm run worker            # in one terminal — dev mode, bundles workflows at startup
 npm run start:greeting    # in another
 ```
 
-Temporal Web UI: http://localhost:8080
+Temporal Web UI: http://localhost:18080
+
+## Production builds
+
+`npm run worker` bundles workflow code at startup, which is fine for local iteration but too slow for production. For a production-like run:
+
+```
+npm run build                  # compiles src/ to dist/
+npm run build:workflow-bundle  # pre-bundles workflow code to dist/workflow-bundle.js
+TEMPORAL_WORKER_MODE=production npm run worker:prod
+```
+
+`TEMPORAL_WORKER_MODE=production` switches the worker from `workflowsPath` (bundles on every startup) to the pre-built `workflowBundle` — see `src/worker/worker.ts`.
 
 ## Namespaces
 
@@ -36,11 +48,11 @@ When the Temporal Cloud subscription is active, point `prod.env` (or CI/CD secre
 
 ## Testing
 
-`npm test` runs Jest against `@temporalio/testing`'s time-skipping test environment — no Docker required.
+`npm test` runs Jest against `@temporalio/testing`'s `TestWorkflowEnvironment.createLocal()` — a full local test server, no Docker required. (Time-skipping is only used when a workflow under test relies on timers, which `greetingWorkflow` does not.)
 
 ## CI
 
-See `.github/workflows/ci.yml`: lint, typecheck, unit tests, build, compose config validation, and a full compose smoke test that runs the sample workflow against both `dev` and `prod` namespaces on every PR.
+See `.github/workflows/ci.yml`: lint, typecheck, unit tests, build (including the pre-bundled workflow code), compose config validation, and a full compose smoke test that runs the production-mode worker and sample workflow against both `dev` and `prod` namespaces on every PR.
 
 `.github/workflows/release.yml` is a manual (`workflow_dispatch`) version bump + tag + draft GitHub release.
 
