@@ -1,0 +1,8 @@
+services:
+  postgresql:
+    ports:
+      - "15432:5432"
+
+  elasticsearch:
+    ports:
+      - 9200:9200

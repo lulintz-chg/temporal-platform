@@ -1,0 +1,7 @@
+node_modules/
+dist/
+*.log
+docker/namespaces/prod.env
+
+# keep template
+!docker/namespaces/prod.env.example
