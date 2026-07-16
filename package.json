@@ -12,7 +12,7 @@
     "test": "jest",
     "worker": "ts-node src/worker/worker.ts",
     "worker:prod": "node dist/worker/worker.js",
-    "start:greeting": "ts-node src/client/start-greeting.ts"
+    "start:workflow": "ts-node src/client/start-workflow.ts"
   },
   "dependencies": {
     "@temporalio/activity": "~1.11.0",
