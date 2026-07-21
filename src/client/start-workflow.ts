@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
-import { Connection, Client } from '@temporalio/client';
-import { connectionOptions, loadNamespaceConfig } from '../config/env';
+import 'dotenv/config';
+import { Client } from '@temporalio/client';
+import { createTemporalClientConnection } from '../core/connection-client';
 
 // Generic CLI to start any workflow by type name — this platform repo doesn't
 // know about specific workflows, so it can't import a typed workflow function.
@@ -17,17 +18,20 @@ async function run() {
     throw new Error('missing required env var TEMPORAL_TASK_QUEUE');
   }
 
-  const config = loadNamespaceConfig();
-  const connection = await Connection.connect(connectionOptions(config));
-  const client = new Client({ connection, namespace: config.namespace });
+  const { connection, namespace } = await createTemporalClientConnection();
+  const client = new Client({ connection, namespace });
 
-  const result = await client.workflow.execute(workflowType, {
-    taskQueue,
-    workflowId: `${workflowType}-${randomUUID()}`,
-    args,
-  });
+  try {
+    const result = await client.workflow.execute(workflowType, {
+      taskQueue,
+      workflowId: `${workflowType}-${randomUUID()}`,
+      args,
+    });
 
-  console.log(JSON.stringify(result));
+    console.log(JSON.stringify(result));
+  } finally {
+    await connection.close();
+  }
 }
 
 run().catch((err) => {

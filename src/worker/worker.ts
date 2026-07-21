@@ -1,6 +1,6 @@
 import path from 'path';
-import { NativeConnection, Worker } from '@temporalio/worker';
-import { connectionOptions, loadNamespaceConfig } from '../config/env';
+import 'dotenv/config';
+import { startWorker } from '../core/connection-worker';
 
 const isProduction = process.env.TEMPORAL_WORKER_MODE === 'production';
 
@@ -10,7 +10,9 @@ const isProduction = process.env.TEMPORAL_WORKER_MODE === 'production';
 function requireAppEntry(): string {
   const entry = process.env.TEMPORAL_APP_ENTRY;
   if (!entry) {
-    throw new Error('missing required env var TEMPORAL_APP_ENTRY (module or path exporting workflows/ and activities/)');
+    throw new Error(
+      'missing required env var TEMPORAL_APP_ENTRY (module or path exporting workflows/ and activities/)'
+    );
   }
   return entry;
 }
@@ -24,33 +26,26 @@ function requireTaskQueue(): string {
 }
 
 async function run() {
-  const config = loadNamespaceConfig();
-  const connection = await NativeConnection.connect(connectionOptions(config));
   const appEntry = requireAppEntry();
   const taskQueue = requireTaskQueue();
 
-  const worker = await Worker.create({
-    connection,
-    namespace: config.namespace,
+  await startWorker({
     taskQueue,
     activities: require(`${appEntry}/activities`),
     // `workflowBundle` (pre-bundled via `npm run build:workflow-bundle`) avoids
     // bundling at startup and is required for production; `workflowsPath`
     // bundles on the fly and is only suitable for local development.
     ...(isProduction
-      ? { workflowBundle: { codePath: process.env.TEMPORAL_WORKFLOW_BUNDLE_PATH ?? path.join(__dirname, '..', '..', 'dist', 'workflow-bundle.js') } }
+      ? {
+          workflowBundle: {
+            codePath:
+              process.env.TEMPORAL_WORKFLOW_BUNDLE_PATH ??
+              path.join(__dirname, '..', '..', 'dist', 'workflow-bundle.js'),
+          },
+        }
       : { workflowsPath: require.resolve(`${appEntry}/workflows`) }),
     shutdownGraceTime: '30 seconds',
   });
-
-  console.log(
-    `worker started: namespace=${config.namespace} address=${config.address} taskQueue=${taskQueue} mode=${isProduction ? 'production' : 'development'}`
-  );
-
-  process.once('SIGINT', () => worker.shutdown());
-  process.once('SIGTERM', () => worker.shutdown());
-
-  await worker.run();
 }
 
 run().catch((err) => {

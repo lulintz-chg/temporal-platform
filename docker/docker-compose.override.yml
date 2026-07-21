@@ -1,7 +1,7 @@
 services:
   postgresql:
     ports:
-      - "15432:5432"
+      - '15432:5432'
 
   elasticsearch:
     ports:
