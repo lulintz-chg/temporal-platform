@@ -172,4 +172,16 @@ See `.github/workflows/ci.yml`: lint, typecheck, unit tests, build, a build-time
 
 ## Deploy
 
-Not yet wired up — `deploy` job in `ci.yml` is a placeholder. Docker Compose is the deploy target for now; Kubernetes and Temporal Cloud are future work.
+The deployment pipeline publishes the webhook-relay container image to GitHub
+Container Registry (GHCR):
+
+- Every green push to `main` → `publish-image` job in `ci.yml` builds `Dockerfile`
+  and pushes `ghcr.io/<owner>/temporal-platform-webhook:latest` and `:<sha>`
+  (only after the full compose smoke test passes).
+- A `workflow_dispatch` release (`release.yml`) additionally pushes an immutable
+  `:v<version>` tag a deploy target can pin to.
+
+Rolling those images onto a host/cluster (docker compose `pull && up -d`, or a
+Kubernetes image bump) is the consuming step and is not yet automated — no cloud
+target is provisioned. Publishing the versioned image is the boundary this
+platform owns today; Kubernetes and Temporal Cloud rollout are future work.
