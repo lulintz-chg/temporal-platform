@@ -11,7 +11,14 @@ async function run() {
   if (!workflowType) {
     throw new Error('usage: start-workflow <workflowType> [argsAsJsonArray]');
   }
-  const args = argsJson ? JSON.parse(argsJson) : [];
+  let args: unknown[] = [];
+  if (argsJson) {
+    const parsed = JSON.parse(argsJson);
+    if (!Array.isArray(parsed)) {
+      throw new Error('argsAsJsonArray must be a JSON array, e.g. \'["foo", 42]\'');
+    }
+    args = parsed;
+  }
 
   const taskQueue = process.env.TEMPORAL_TASK_QUEUE;
   if (!taskQueue) {

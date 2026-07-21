@@ -1,4 +1,11 @@
-import { ApplicationFailure, isCancellation, log, sleep, workflowInfo } from '@temporalio/workflow';
+import {
+  ApplicationFailure,
+  CancellationScope,
+  isCancellation,
+  log,
+  sleep,
+  workflowInfo,
+} from '@temporalio/workflow';
 
 interface RaceWithTimeoutOptions {
   /** Used in the continueAsNew warning and the default timeout/cancellation messages. */
@@ -26,17 +33,27 @@ export async function raceWithTimeout<T>(
   }
 
   try {
-    const outcome = await Promise.race([
-      trigger.then((value) => ({ ok: true as const, value })),
-      sleep(`${timeoutMinutes} minutes`).then(() => ({ ok: false as const })),
-    ]);
+    return await CancellationScope.cancellable(async () => {
+      try {
+        const outcome = await Promise.race([
+          trigger.then((value) => ({ ok: true as const, value })),
+          sleep(`${timeoutMinutes} minutes`).then(() => ({ ok: false as const })),
+        ]);
 
-    if (!outcome.ok) {
-      throw ApplicationFailure.nonRetryable(
-        `${options.label} timed out after ${timeoutMinutes} minutes`
-      );
-    }
-    return outcome.value;
+        if (!outcome.ok) {
+          throw ApplicationFailure.nonRetryable(
+            `${options.label} timed out after ${timeoutMinutes} minutes`
+          );
+        }
+        return outcome.value;
+      } finally {
+        // Cancel the scope so the race's losing branch — the pending timer, or the
+        // trigger wait when the timer wins — is torn down instead of left open in
+        // history. Promise.race already attached a rejection handler to each branch,
+        // so the resulting CancelledFailure surfaces nowhere.
+        CancellationScope.current().cancel();
+      }
+    });
   } catch (err) {
     if (isCancellation(err)) {
       log.warn(options.cancellationMessage ?? `${options.label}: workflow cancelled while waiting`);

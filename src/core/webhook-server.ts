@@ -67,11 +67,8 @@ export function createWebhookApp(client: Pick<Client, 'workflow'>): express.Expr
   // dependency is the Temporal client and the workflowCallback signal definition.
   app.post('/callback', async (req, res) => {
     const workflowId = getWorkflowId(req);
-    console.log(
-      '[webhook] POST /callback workflowId=%s body=%s',
-      workflowId,
-      JSON.stringify(req.body)
-    );
+    // Don't log req.body — callback payloads may carry PII or provider secrets.
+    console.log('[webhook] POST /callback workflowId=%s', workflowId);
 
     if (WEBHOOK_SECRET) {
       const auth = req.headers['authorization'];
@@ -130,10 +127,14 @@ async function main(): Promise<void> {
   const server = app.listen(PORT, () => console.log(`Webhook server listening on :${PORT}`));
 
   const shutdown = () => {
-    server.close();
-    connection.close().catch((err: unknown) => {
-      console.error('[webhook] error closing connection during shutdown:', err);
-      process.exit(1);
+    // Stop accepting new requests first, then close the Temporal connection once
+    // in-flight requests drain. Let the process exit naturally when handles close;
+    // only force a non-zero exit code on a connection-close failure.
+    server.close(() => {
+      connection.close().catch((err: unknown) => {
+        console.error('[webhook] error closing connection during shutdown:', err);
+        process.exitCode = 1;
+      });
     });
   };
   process.once('SIGINT', shutdown);

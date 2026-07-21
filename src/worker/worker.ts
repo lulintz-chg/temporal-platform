@@ -25,13 +25,25 @@ function requireTaskQueue(): string {
   return taskQueue;
 }
 
+// require() of the activities module includes non-function exports (__esModule,
+// default, re-exported types). Register only the function exports so a stray
+// export can't become a bogus activity registration.
+function onlyFunctions(
+  mod: Record<string, unknown>
+): Record<string, (...args: unknown[]) => unknown> {
+  return Object.fromEntries(
+    Object.entries(mod).filter(([, value]) => typeof value === 'function')
+  ) as Record<string, (...args: unknown[]) => unknown>;
+}
+
 async function run() {
   const appEntry = requireAppEntry();
   const taskQueue = requireTaskQueue();
 
   await startWorker({
     taskQueue,
-    activities: require(`${appEntry}/activities`),
+    // eslint-disable-next-line @typescript-eslint/no-var-requires -- dynamic app entry
+    activities: onlyFunctions(require(`${appEntry}/activities`)),
     // `workflowBundle` (pre-bundled via `npm run build:workflow-bundle`) avoids
     // bundling at startup and is required for production; `workflowsPath`
     // bundles on the fly and is only suitable for local development.

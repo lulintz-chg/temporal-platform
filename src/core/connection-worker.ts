@@ -67,7 +67,7 @@ export async function startWorker({
   shutdownGraceTime,
 }: WorkerOptions): Promise<void> {
   const { connection, namespace: configuredNamespace } = await createTemporalNativeConnection();
-  namespace = namespace ?? configuredNamespace;
+  const resolvedNamespace = namespace ?? configuredNamespace;
 
   if (!workflowBundle) {
     console.warn('[temporal] workflowBundle not provided — bundling at startup. Dev only.');
@@ -76,7 +76,7 @@ export async function startWorker({
   try {
     const worker = await Worker.create({
       connection,
-      namespace,
+      namespace: resolvedNamespace,
       taskQueue,
       activities,
       ...(workflowBundle ? { workflowBundle } : { workflowsPath }),
@@ -84,7 +84,7 @@ export async function startWorker({
     });
 
     console.log(
-      `worker started: namespace=${namespace} taskQueue=${taskQueue} mode=${workflowBundle ? 'production' : 'development'}`
+      `worker started: namespace=${resolvedNamespace} taskQueue=${taskQueue} mode=${workflowBundle ? 'production' : 'development'}`
     );
 
     const shutdown = () => {
