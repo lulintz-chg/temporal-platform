@@ -43,12 +43,14 @@ exposes Postgres/Elasticsearch ports for local debugging.
 
 ### REQ-00-3 — dev and prod namespaces
 
-Both `dev` and `prod` namespaces are auto-registered on the local server at
-startup by `scripts/register-namespaces.sh` (via the `temporal-admin-tools`
-service), idempotently. Per-namespace connection config lives in
-`docker/namespaces/dev.env` and `docker/namespaces/prod.env` (the latter
-gitignored once it holds real secrets; `prod.env.example` is the committed
-template).
+Both namespaces (`workflow-orchestration-platform-temporal-platform-dev` and
+`workflow-orchestration-platform-temporal-platform-prod`, following the
+`team-service-environment` naming convention) are auto-registered on the local
+server at startup by `scripts/register-namespaces.sh` (via the
+`temporal-admin-tools` service), idempotently. Per-namespace connection config
+lives in `docker/namespaces/dev.env` and `docker/namespaces/prod.env` (the
+latter gitignored once it holds real secrets; `prod.env.example` is the
+committed template).
 
 ### REQ-00-4 — envconfig-driven connections, no hardcoded namespace
 
@@ -57,7 +59,9 @@ template).
 `@temporalio/envconfig`'s `loadClientConnectConfig()`. The same env var names
 work unchanged against local Docker and Temporal Cloud with no code change. The
 resolved namespace is returned alongside the connection so callers never
-hardcode `'default'`.
+hardcode `'default'`. Both helpers validate the resolved namespace against the
+`team-service-environment` naming convention (`src/core/namespace-naming.ts`)
+and throw before connecting if it doesn't match.
 
 ### REQ-00-5 — Generic worker harness
 

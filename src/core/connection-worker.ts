@@ -3,6 +3,7 @@ import { loadClientConnectConfig } from '@temporalio/envconfig';
 import type { Effect } from 'effect';
 import type { ManagedRuntime } from 'effect/ManagedRuntime';
 import type { EffectActivities } from './types';
+import { assertNamespaceName } from './namespace-naming';
 
 export { Worker };
 
@@ -27,8 +28,10 @@ export type NativeConnectionResult = { connection: NativeConnection; namespace: 
 // call site, or workers silently split across namespaces when the env points elsewhere.
 export async function createTemporalNativeConnection(): Promise<NativeConnectionResult> {
   const { connectionOptions, namespace } = loadClientConnectConfig();
+  const resolvedNamespace = namespace ?? 'default';
+  assertNamespaceName(resolvedNamespace);
   const connection = await NativeConnection.connect(connectionOptions);
-  return { connection, namespace: namespace ?? 'default' };
+  return { connection, namespace: resolvedNamespace };
 }
 
 // Turns a module of Effect-returning activities into the Promise-returning shape

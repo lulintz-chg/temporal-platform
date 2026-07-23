@@ -97,7 +97,7 @@ services:
         condition: service_healthy
     environment:
       - TEMPORAL_ADDRESS=temporal:7233
-      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-dev}
+      - TEMPORAL_NAMESPACE=${TEMPORAL_NAMESPACE:-workflow-orchestration-platform-temporal-platform-dev}
       - WEBHOOK_PORT=${WEBHOOK_PORT:-3001}
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
     ports:

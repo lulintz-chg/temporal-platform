@@ -1,5 +1,6 @@
 import { Connection } from '@temporalio/client';
 import { loadClientConnectConfig } from '@temporalio/envconfig';
+import { assertNamespaceName } from './namespace-naming';
 
 export type ClientConnectionResult = { connection: Connection; namespace: string };
 
@@ -8,6 +9,8 @@ export type ClientConnectionResult = { connection: Connection; namespace: string
 // silently split across namespaces when the env points elsewhere.
 export async function createTemporalClientConnection(): Promise<ClientConnectionResult> {
   const { connectionOptions, namespace } = loadClientConnectConfig();
+  const resolvedNamespace = namespace ?? 'default';
+  assertNamespaceName(resolvedNamespace);
   const connection = await Connection.connect(connectionOptions);
-  return { connection, namespace: namespace ?? 'default' };
+  return { connection, namespace: resolvedNamespace };
 }

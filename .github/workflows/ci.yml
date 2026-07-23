@@ -83,7 +83,7 @@ jobs:
       - name: Start workers (dev + prod namespaces)
         env:
           TEMPORAL_APP_ENTRY: ${{ github.workspace }}/test/fixtures/greeting
-          TEMPORAL_TASK_QUEUE: greeting-task-queue
+          TEMPORAL_TASK_QUEUE: workflow-orchestration-platform-temporal-platform-dev-greeting
         run: |
           set -a; . docker/namespaces/dev.env; set +a
           npm run worker & echo $! > worker-dev.pid
@@ -97,7 +97,7 @@ jobs:
 
       - name: Run sample workflow against dev namespace
         env:
-          TEMPORAL_TASK_QUEUE: greeting-task-queue
+          TEMPORAL_TASK_QUEUE: workflow-orchestration-platform-temporal-platform-dev-greeting
         run: |
           set -a
           . docker/namespaces/dev.env
@@ -106,7 +106,7 @@ jobs:
 
       - name: Run sample workflow against prod namespace
         env:
-          TEMPORAL_TASK_QUEUE: greeting-task-queue
+          TEMPORAL_TASK_QUEUE: workflow-orchestration-platform-temporal-platform-dev-greeting
         run: |
           set -a
           . docker/namespaces/prod.env

@@ -19,26 +19,35 @@ describe('createTemporalClientConnection', () => {
     const fakeConnection = { close: jest.fn() };
     (loadClientConnectConfig as jest.Mock).mockReturnValue({
       connectionOptions,
-      namespace: 'my-ns',
+      namespace: 'workflow-orchestration-platform-temporal-platform-prod',
     });
     (Connection.connect as jest.Mock).mockResolvedValue(fakeConnection);
 
     const result = await createTemporalClientConnection();
 
     expect(Connection.connect).toHaveBeenCalledWith(connectionOptions);
-    expect(result).toEqual({ connection: fakeConnection, namespace: 'my-ns' });
+    expect(result).toEqual({
+      connection: fakeConnection,
+      namespace: 'workflow-orchestration-platform-temporal-platform-prod',
+    });
   });
 
-  it('defaults namespace to "default" when envconfig returns none', async () => {
-    const fakeConnection = { close: jest.fn() };
+  it('rejects a namespace that does not follow team-service-environment naming', async () => {
+    (loadClientConnectConfig as jest.Mock).mockReturnValue({
+      connectionOptions: {},
+      namespace: 'my-ns',
+    });
+
+    await expect(createTemporalClientConnection()).rejects.toThrow('invalid namespace');
+    expect(Connection.connect).not.toHaveBeenCalled();
+  });
+
+  it('rejects when envconfig returns no namespace (defaults to "default")', async () => {
     (loadClientConnectConfig as jest.Mock).mockReturnValue({
       connectionOptions: {},
       namespace: undefined,
     });
-    (Connection.connect as jest.Mock).mockResolvedValue(fakeConnection);
 
-    const result = await createTemporalClientConnection();
-
-    expect(result.namespace).toBe('default');
+    await expect(createTemporalClientConnection()).rejects.toThrow('invalid namespace');
   });
 });

@@ -58,26 +58,36 @@ describe('createTemporalNativeConnection', () => {
     const fakeConnection = { close: jest.fn() };
     (loadClientConnectConfig as jest.Mock).mockReturnValue({
       connectionOptions,
-      namespace: 'my-ns',
+      namespace: 'workflow-orchestration-platform-temporal-platform-dev',
     });
     (NativeConnection.connect as jest.Mock).mockResolvedValue(fakeConnection);
 
     const result = await createTemporalNativeConnection();
 
     expect(NativeConnection.connect).toHaveBeenCalledWith(connectionOptions);
-    expect(result).toEqual({ connection: fakeConnection, namespace: 'my-ns' });
+    expect(result).toEqual({
+      connection: fakeConnection,
+      namespace: 'workflow-orchestration-platform-temporal-platform-dev',
+    });
   });
 
-  it('defaults namespace to "default" when envconfig returns none', async () => {
+  it('rejects a namespace that does not follow team-service-environment naming', async () => {
+    (loadClientConnectConfig as jest.Mock).mockReturnValue({
+      connectionOptions: {},
+      namespace: 'my-ns',
+    });
+
+    await expect(createTemporalNativeConnection()).rejects.toThrow('invalid namespace');
+    expect(NativeConnection.connect).not.toHaveBeenCalled();
+  });
+
+  it('rejects when envconfig returns no namespace (defaults to "default")', async () => {
     (loadClientConnectConfig as jest.Mock).mockReturnValue({
       connectionOptions: {},
       namespace: undefined,
     });
-    (NativeConnection.connect as jest.Mock).mockResolvedValue({ close: jest.fn() });
 
-    const result = await createTemporalNativeConnection();
-
-    expect(result.namespace).toBe('default');
+    await expect(createTemporalNativeConnection()).rejects.toThrow('invalid namespace');
   });
 });
 
@@ -92,7 +102,7 @@ describe('startWorker', () => {
     worker = { run: jest.fn().mockResolvedValue(undefined), shutdown: jest.fn() };
     (loadClientConnectConfig as jest.Mock).mockReturnValue({
       connectionOptions: {},
-      namespace: 'configured-ns',
+      namespace: 'workflow-orchestration-platform-temporal-platform-dev',
     });
     (NativeConnection.connect as jest.Mock).mockResolvedValue(connection);
     (Worker.create as jest.Mock).mockResolvedValue(worker);
@@ -112,7 +122,7 @@ describe('startWorker', () => {
     expect(Worker.create).toHaveBeenCalledWith(
       expect.objectContaining({
         connection,
-        namespace: 'configured-ns',
+        namespace: 'workflow-orchestration-platform-temporal-platform-dev',
         taskQueue: 'tq',
         activities: {},
         workflowsPath: '/wf.js',

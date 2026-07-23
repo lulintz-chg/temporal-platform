@@ -30,8 +30,8 @@ Wait for the stack to become healthy (`docker compose --project-directory . -f d
 
 ```
 set -a; . docker/namespaces/dev.env; set +a
-TEMPORAL_APP_ENTRY="$(pwd)/test/fixtures/greeting" TEMPORAL_TASK_QUEUE=greeting-task-queue npm run worker   # one terminal
-TEMPORAL_TASK_QUEUE=greeting-task-queue npm run start:workflow -- greetingWorkflow '["World"]'              # another
+TEMPORAL_APP_ENTRY="$(pwd)/test/fixtures/greeting" TEMPORAL_TASK_QUEUE=workflow-orchestration-platform-temporal-platform-dev-greeting npm run worker   # one terminal
+TEMPORAL_TASK_QUEUE=workflow-orchestration-platform-temporal-platform-dev-greeting npm run start:workflow -- greetingWorkflow '["World"]'              # another
 ```
 
 Temporal Web UI: http://localhost:18080
@@ -150,6 +150,10 @@ built from this repo's `Dockerfile`. Configure via `WEBHOOK_PORT` and
 
 ## Namespaces
 
+Namespaces (and task queues) follow a `team-service-environment` naming
+convention: `workflow-orchestration-platform-temporal-platform-dev` and
+`workflow-orchestration-platform-temporal-platform-prod`. `createTemporalClientConnection`/`createTemporalNativeConnection` (`src/core/connection-client.ts`, `src/core/connection-worker.ts`) validate the resolved namespace against this pattern (`src/core/namespace-naming.ts`) and throw before connecting if it doesn't match — a misconfigured `TEMPORAL_NAMESPACE` fails fast instead of silently connecting to the wrong place.
+
 `docker/namespaces/dev.env` and `docker/namespaces/prod.env` hold everything that differs between namespaces: `TEMPORAL_NAMESPACE`, `TEMPORAL_ADDRESS`, and (blank today) `TEMPORAL_API_KEY` / `TEMPORAL_TLS_CLIENT_CERT_PATH` / `TEMPORAL_TLS_CLIENT_KEY_PATH`. These are the exact variable names read by `@temporalio/envconfig`'s `loadClientConnectConfig()` (`src/core/connection-client.ts`, `src/core/connection-worker.ts`) — no custom parsing layer.
 
 Both namespaces are auto-registered on the local server by `temporal-admin-tools` (`scripts/register-namespaces.sh`) when the stack starts.
@@ -158,7 +162,7 @@ When the Temporal Cloud subscription is active, point `prod.env` (or CI/CD secre
 
 `prod.env` is gitignored once it holds anything real; `prod.env.example` is the committed template.
 
-All domains sharing a namespace should follow consistent task-queue/workflow-ID/search-attribute naming conventions (prefix with the domain) to avoid collisions — see `credentialing-domain-poc`'s `LICENSE_TASK_QUEUE`/`license-renewal-*` for the pattern.
+Task queues extend the same convention with a purpose suffix — `team-service-environment-purpose`, e.g. this repo's own fixture: `workflow-orchestration-platform-temporal-platform-dev-greeting`. All domains sharing a namespace should follow it (and the same pattern for workflow IDs/search attributes) to avoid collisions — see `credentialing-domain-poc`'s `LICENSE_TASK_QUEUE`/`license-renewal-*` for how a domain repo applies it.
 
 ## Testing
 
